@@ -48,6 +48,7 @@ from prismatic.vla.datasets.rlds.utils.data_utils import save_dataset_statistics
 from prismatic.extern.hf.configuration_prismatic import OpenVLAConfig
 from prismatic.extern.hf.modeling_prismatic import OpenVLAForActionPrediction
 from prismatic.extern.hf.processing_prismatic import PrismaticImageProcessor, PrismaticProcessor
+from loguru import logger
 
 # Sane Defaults
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
@@ -103,6 +104,7 @@ class FinetuneConfig:
                                                                     #   => CAUTION: Reduces memory but hurts performance
 
     # Tracking Parameters
+    use_wandb: bool = True                                          # Whether to use W&B for logging (continues training if W&B fails)
     wandb_project: str = "openvla"                                  # Name of W&B project to log to (use default!)
     wandb_entity: str = "stanford-voltron"                          # Name of entity to log under
     run_id_note: Optional[str] = None                               # Extra note for logging, Weights & Biases
@@ -237,9 +239,17 @@ def finetune(cfg: FinetuneConfig) -> None:
         num_workers=0,  # Important =>> Set to 0 if using RLDS; TFDS rolls its own parallelism!
     )
 
-    # Initialize Logging =>> W&B
-    if distributed_state.is_main_process:
-        wandb.init(entity=cfg.wandb_entity, project=cfg.wandb_project, name=f"ft+{exp_id}")
+    # Initialize Logging =>> W&B (with error handling)
+    wandb_initialized = False
+    if cfg.use_wandb and distributed_state.is_main_process:
+        try:
+            wandb.init(entity=cfg.wandb_entity, project=cfg.wandb_project, name=f"ft+{exp_id}")
+            wandb_initialized = True
+            print("Successfully initialized W&B logging")
+        except Exception as e:
+            print(f"Warning: Failed to initialize W&B logging: {e}")
+            print("Continuing training without W&B logging...")
+            wandb_initialized = False
 
     # Deque to store recent train metrics (used for computing smoothened metrics for gradient accumulation)
     recent_losses = deque(maxlen=cfg.grad_accumulation_steps)
@@ -300,16 +310,25 @@ def finetune(cfg: FinetuneConfig) -> None:
             smoothened_action_accuracy = sum(recent_action_accuracies) / len(recent_action_accuracies)
             smoothened_l1_loss = sum(recent_l1_losses) / len(recent_l1_losses)
 
-            # Push Metrics to W&B (every 10 gradient steps)
-            if distributed_state.is_main_process and gradient_step_idx % 10 == 0:
-                wandb.log(
-                    {
-                        "train_loss": smoothened_loss,
-                        "action_accuracy": smoothened_action_accuracy,
-                        "l1_loss": smoothened_l1_loss,
-                    },
-                    step=gradient_step_idx,
-                )
+            logger.info(f"smoothened_loss: {smoothened_loss}")
+            logger.info(f"smoothened_action_accuracy: {smoothened_action_accuracy}")
+            logger.info(f"smoothened_l1_loss: {smoothened_l1_loss}")
+            # Push Metrics to W&B (every 10 gradient steps) - only if W&B is initialized
+            if wandb_initialized and distributed_state.is_main_process and gradient_step_idx % 10 == 0:
+                try:
+                    wandb.log(
+                        {
+                            "train_loss": smoothened_loss,
+                            "action_accuracy": smoothened_action_accuracy,
+                            "l1_loss": smoothened_l1_loss,
+                        },
+                        step=gradient_step_idx,
+                    )
+                except Exception as e:
+                    # If logging fails, disable W&B for future steps
+                    if distributed_state.is_main_process:
+                        print(f"Warning: W&B logging failed: {e}. Disabling W&B for remaining steps.")
+                    wandb_initialized = False
 
             # Optimizer Step
             if (batch_idx + 1) % cfg.grad_accumulation_steps == 0:

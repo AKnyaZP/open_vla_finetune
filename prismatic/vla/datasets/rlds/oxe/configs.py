@@ -27,6 +27,7 @@ Configuration adopts the following structure:
 from enum import IntEnum
 
 from prismatic.vla.datasets.rlds.oxe.utils.droid_utils import zero_action_filter
+from prismatic.vla.datasets.rlds.oxe.transforms import transform_dsynth_atomic_tasks
 
 
 # Defines Proprioceptive State Encoding Schemes
@@ -193,7 +194,7 @@ OXE_DATASET_CONFIGS = {
         "depth_obs_keys": {"primary": "depth_image", "secondary": None, "wrist": None},
         "state_obs_keys": ["ee_position", "ee_orientation", None],
         "state_encoding": StateEncoding.POS_QUAT,
-        "action_encoding": ActionEncoding.EEF_POS,
+        "action_encoding": ActionEncoding.JOINT_POS,
     },
     "nyu_rot_dataset_converted_externally_to_rlds": {
         "image_obs_keys": {"primary": "image", "secondary": None, "wrist": None},
@@ -590,7 +591,7 @@ OXE_DATASET_CONFIGS = {
         "state_encoding": StateEncoding.POS_EULER,
         "action_encoding": ActionEncoding.EEF_POS,
     },
-    ### T-DROID datasets
+    # T-DROID datasets
     "tdroid_carrot_in_bowl": {  # "put carrot in bowl" task, 50 demos @ 5 Hz control
         "image_obs_keys": {"primary": "static_image", "secondary": None, "wrist": None},
         "depth_obs_keys": {"primary": "static_depth_image", "secondary": None, "wrist": None},
@@ -633,7 +634,7 @@ OXE_DATASET_CONFIGS = {
         "state_encoding": StateEncoding.POS_EULER,
         "action_encoding": ActionEncoding.EEF_POS,
     },
-    ### DROID Finetuning datasets
+    # DROID Finetuning datasets
     "droid_wipe": {
         "image_obs_keys": {"primary": "exterior_image_2_left", "secondary": None, "wrist": "wrist_image_left"},
         "depth_obs_keys": {"primary": None, "secondary": None, "wrist": None},
@@ -641,7 +642,7 @@ OXE_DATASET_CONFIGS = {
         "state_encoding": StateEncoding.POS_EULER,
         "action_encoding": ActionEncoding.EEF_POS,
     },
-    ### LIBERO datasets (modified versions)
+    # LIBERO datasets (modified versions)
     "libero_spatial_no_noops": {
         "image_obs_keys": {"primary": "image", "secondary": None, "wrist": "wrist_image"},
         "depth_obs_keys": {"primary": None, "secondary": None, "wrist": None},
@@ -670,4 +671,40 @@ OXE_DATASET_CONFIGS = {
         "state_encoding": StateEncoding.POS_EULER,
         "action_encoding": ActionEncoding.EEF_POS,
     },
+    # "dsynth_atomic_tasks": {
+    #     "image_obs_keys": {"primary": "image", "secondary": None, "wrist": "wrist_image"},
+    #     "depth_obs_keys": {"primary": None, "secondary": None, "wrist": None},
+    #     "state_obs_keys": ["EEF_state", None, "gripper_state"],
+    #     "state_encoding": StateEncoding.POS_EULER,
+    #     "action_encoding": ActionEncoding.EEF_R6,
+
+    #     "transform_fn": transform_dsynth_atomic_tasks,  # Функция из transforms.py
+    # },
+
+    # "dsynth_atomic_tasks": {
+    #     "image_obs_keys": {"primary": "image", "secondary": None, "wrist": "wrist_image"},
+    #     "depth_obs_keys": {"primary": None, "secondary": None, "wrist": None},
+    #     "state_obs_keys": ["EEF_state", None, "gripper_state"],
+    #     "state_encoding": StateEncoding.POS_EULER,
+    #     "action_encoding": ActionEncoding.EEF_POS,
+    # },
+
+    "dsynth_atomic_tasks": {
+        "image_obs_keys": {
+            "primary": "image",  # или "right_base_camera_link" согласно вашему transform
+            "secondary": None,
+            "wrist": "wrist_image",  # или "fetch_hand" согласно вашему transform
+        },
+        "depth_obs_keys": {"primary": None, "secondary": None, "wrist": None},
+        "state_obs_keys": ["EEF_state", "gripper_state"],
+        "state_encoding": StateEncoding.POS_EULER,
+        "action_encoding": ActionEncoding.EEF_POS,
+        "aux_kwargs": {
+            # Для 13-мерных действий нужна маска из 13 элементов
+            # Все 13 измерений используются
+            "absolute_action_mask": [True] * 13
+        }
+    }
+
+
 }

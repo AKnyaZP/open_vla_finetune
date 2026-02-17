@@ -151,3 +151,6 @@ data/
 # Rollout videos and wandb logs
 rollouts/
 wandb/
+
+
+adapters/openvla-7b+dsynth_atomic_tasks+b16+lr-0.0005+lora-r32+dropout-0.0/adapter_model.safetensors

@@ -193,7 +193,8 @@ def make_dataset_from_rlds(
                     f"does not match action dimension ({traj['action'].shape[-1]})."
                 )
             traj["absolute_action_mask"] = tf.tile(
-                tf.convert_to_tensor(absolute_action_mask, dtype=tf.bool)[None],
+                tf.convert_to_tensor(absolute_action_mask,
+                                     dtype=tf.bool)[None],
                 [traj_len, 1],
             )
 
@@ -215,7 +216,8 @@ def make_dataset_from_rlds(
             hash_dependencies=(
                 str(builder.info),
                 str(state_obs_keys),
-                inspect.getsource(standardize_fn) if standardize_fn is not None else "",
+                inspect.getsource(
+                    standardize_fn) if standardize_fn is not None else "",
             ),
             save_dir=builder.data_dir,
         )
@@ -228,15 +230,17 @@ def make_dataset_from_rlds(
                 f"Length of skip_normalization_mask ({len(action_normalization_mask)}) "
                 f"does not match action dimension ({dataset_statistics['action']['mean'].shape[-1]})."
             )
-        dataset_statistics["action"]["mask"] = np.array(action_normalization_mask)
+        dataset_statistics["action"]["mask"] = np.array(
+            action_normalization_mask)
 
     # construct the dataset
     if "val" not in builder.info.splits:
-        split = "train[:95%]" if train else "train[95%:]"
+        split = "all"
     else:
-        split = "train" if train else "val"
+        split = "all"
 
-    dataset = dl.DLataset.from_rlds(builder, split=split, shuffle=shuffle, num_parallel_reads=num_parallel_reads)
+    dataset = dl.DLataset.from_rlds(
+        builder, split=split, shuffle=shuffle, num_parallel_reads=num_parallel_reads)
 
     dataset = dataset.traj_map(restructure, num_parallel_calls)
     dataset = dataset.traj_map(
@@ -300,23 +304,29 @@ def apply_trajectory_transforms(
     """
     if skip_unlabeled:
         if "language_instruction" not in dataset.element_spec["task"]:
-            raise ValueError("skip_unlabeled=True but dataset does not have language labels.")
+            raise ValueError(
+                "skip_unlabeled=True but dataset does not have language labels.")
 
-        dataset = dataset.filter(lambda x: tf.math.reduce_any(x["task"]["language_instruction"] != ""))
+        dataset = dataset.filter(lambda x: tf.math.reduce_any(
+            x["task"]["language_instruction"] != ""))
 
     if max_action is not None:
-        dataset = dataset.filter(lambda x: tf.math.reduce_all(tf.math.abs(x["action"]) <= max_action))
+        dataset = dataset.filter(lambda x: tf.math.reduce_all(
+            tf.math.abs(x["action"]) <= max_action))
 
     if max_proprio is not None and "proprio" in dataset.element_spec["observation"]:
-        dataset = dataset.filter(lambda x: tf.math.reduce_all(tf.math.abs(x["observation"]["proprio"]) <= max_proprio))
+        dataset = dataset.filter(lambda x: tf.math.reduce_all(
+            tf.math.abs(x["observation"]["proprio"]) <= max_proprio))
 
     # marks which entires of the observation and task dicts are padding
-    dataset = dataset.traj_map(traj_transforms.add_pad_mask_dict, num_parallel_calls)
+    dataset = dataset.traj_map(
+        traj_transforms.add_pad_mask_dict, num_parallel_calls)
 
     # updates the "task" dict
     if goal_relabeling_strategy is not None:
         dataset = dataset.traj_map(
-            partial(getattr(goal_relabeling, goal_relabeling_strategy), **goal_relabeling_kwargs),
+            partial(getattr(goal_relabeling, goal_relabeling_strategy),
+                    **goal_relabeling_kwargs),
             num_parallel_calls,
         )
 
@@ -344,7 +354,8 @@ def apply_trajectory_transforms(
 
     if train and subsample_length is not None:
         dataset = dataset.traj_map(
-            partial(traj_transforms.subsample, subsample_length=subsample_length),
+            partial(traj_transforms.subsample,
+                    subsample_length=subsample_length),
             num_parallel_calls,
         )
 
@@ -407,7 +418,8 @@ def apply_frame_transforms(
     dataset = dataset.frame_map(
         partial(
             apply_obs_transform,
-            partial(obs_transforms.decode_and_resize, resize_size=resize_size, depth_resize_size=depth_resize_size),
+            partial(obs_transforms.decode_and_resize,
+                    resize_size=resize_size, depth_resize_size=depth_resize_size),
         ),
         num_parallel_calls,
     )
@@ -415,8 +427,10 @@ def apply_frame_transforms(
     if train:
         # Augment all images with the same seed, skipping padding images
         def aug(frame: dict):
-            seed = tf.random.uniform([2], maxval=tf.dtypes.int32.max, dtype=tf.int32)
-            aug_fn = partial(obs_transforms.augment, seed=seed, augment_kwargs=image_augment_kwargs)
+            seed = tf.random.uniform(
+                [2], maxval=tf.dtypes.int32.max, dtype=tf.int32)
+            aug_fn = partial(obs_transforms.augment, seed=seed,
+                             augment_kwargs=image_augment_kwargs)
             return apply_obs_transform(aug_fn, frame)
 
         dataset = dataset.frame_map(aug, num_parallel_calls)
@@ -443,8 +457,10 @@ def make_single_dataset(
         **dataset_kwargs,
         train=train,
     )
-    dataset = apply_trajectory_transforms(dataset, **traj_transform_kwargs, train=train)
-    dataset = apply_frame_transforms(dataset, **frame_transform_kwargs, train=train)
+    dataset = apply_trajectory_transforms(
+        dataset, **traj_transform_kwargs, train=train)
+    dataset = apply_frame_transforms(
+        dataset, **frame_transform_kwargs, train=train)
 
     # this seems to reduce memory usage without affecting speed
     dataset = dataset.with_ram_budget(1)
@@ -495,11 +511,13 @@ def make_interleaved_dataset(
         sample_weights = [1.0] * len(dataset_kwargs_list)
 
     if len(sample_weights) != len(dataset_kwargs_list):
-        raise ValueError(f"sample_weights must be None or have length {len(dataset_kwargs_list)}.")
+        raise ValueError(
+            f"sample_weights must be None or have length {len(dataset_kwargs_list)}.")
 
     # Check valid `traj_transform_kwargs` and `frame_transform_kwargs`
     if (traj_transform_kwargs is None) or (frame_transform_kwargs is None):
-        raise ValueError("Missing `traj_transform_kwargs` and `frame_transform_kwargs`!")
+        raise ValueError(
+            "Missing `traj_transform_kwargs` and `frame_transform_kwargs`!")
 
     # Get Dataset Sizes
     dataset_sizes, all_dataset_statistics = [], {}
@@ -507,12 +525,14 @@ def make_interleaved_dataset(
         data_kwargs = copy.deepcopy(dataset_kwargs)
         if "dataset_frame_transform_kwargs" in data_kwargs:
             data_kwargs.pop("dataset_frame_transform_kwargs")
-        _, dataset_statistics = make_dataset_from_rlds(**data_kwargs, train=train)
+        _, dataset_statistics = make_dataset_from_rlds(
+            **data_kwargs, train=train)
         dataset_sizes.append(dataset_statistics["num_transitions"])
         all_dataset_statistics[dataset_kwargs["name"]] = dataset_statistics
 
     # Get the indices of the "primary" datasets (i.e., datasets with sample_weight == 1.0)
-    primary_dataset_indices = np.array([idx for idx in range(len(sample_weights)) if sample_weights[idx] == 1.0])
+    primary_dataset_indices = np.array([idx for idx in range(
+        len(sample_weights)) if sample_weights[idx] == 1.0])
 
     # Balance and Normalize Weights
     if balance_weights:
@@ -522,10 +542,12 @@ def make_interleaved_dataset(
 
     # Effective Dataset Length = Number of samples until each dataset has completed at least one epoch
     #   =>> Note :: Only counting the "primary" datasets (i.e., datasets with sample_weight == 1.0)
-    dataset_len = int((np.array(dataset_sizes) / sample_weights)[primary_dataset_indices].max())
+    dataset_len = int((np.array(dataset_sizes) / sample_weights)
+                      [primary_dataset_indices].max())
 
     # Allocate Threads based on Weights
-    threads_per_dataset = allocate_threads(traj_transform_threads, sample_weights)
+    threads_per_dataset = allocate_threads(
+        traj_transform_threads, sample_weights)
     reads_per_dataset = allocate_threads(traj_read_threads, sample_weights)
 
     overwatch.info("Threads per Dataset: %s", threads_per_dataset)
@@ -557,11 +579,13 @@ def make_interleaved_dataset(
             num_parallel_calls=threads,
             train=train,
         ).flatten(num_parallel_calls=threads)
-        dataset = apply_per_dataset_frame_transforms(dataset, **dataset_frame_transform_kwargs)
+        dataset = apply_per_dataset_frame_transforms(
+            dataset, **dataset_frame_transform_kwargs)
         datasets.append(dataset)
 
     # Interleave at the Frame Level
-    dataset: dl.DLataset = dl.DLataset.sample_from_datasets(datasets, sample_weights)
+    dataset: dl.DLataset = dl.DLataset.sample_from_datasets(
+        datasets, sample_weights)
 
     # Validation =>> fix a single shuffle buffer of data and cache it in RAM; prevents gradual memory increase!
     if not train:
@@ -573,7 +597,8 @@ def make_interleaved_dataset(
 
     # Apply Frame Transforms
     overwatch.info("Applying frame transforms on dataset...")
-    dataset = apply_frame_transforms(dataset, **frame_transform_kwargs, train=train)
+    dataset = apply_frame_transforms(
+        dataset, **frame_transform_kwargs, train=train)
 
     # [Contract] When training VLA Policies, we let the Collator handle Batching!
     if batch_size is not None:

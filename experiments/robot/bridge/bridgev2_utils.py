@@ -1,5 +1,6 @@
 """Utils for evaluating policies in real-world BridgeData V2 environments."""
 
+from experiments.robot.bridge.widowx_env import WidowXGym
 import os
 import sys
 import time
@@ -11,13 +12,13 @@ import torch
 from widowx_envs.widowx_env_service import WidowXClient, WidowXConfigs
 
 sys.path.append(".")
-from experiments.robot.bridge.widowx_env import WidowXGym
 
 # Initialize important constants and pretty-printing mode in NumPy.
 ACTION_DIM = 7
 BRIDGE_PROPRIO_DIM = 7
 DATE_TIME = time.strftime("%Y_%m_%d-%H_%M_%S")
-DEVICE = torch.device("cuda:0") if torch.cuda.is_available() else torch.device("cpu")
+DEVICE = torch.device(
+    "cuda:0") if torch.cuda.is_available() else torch.device("cpu")
 np.set_printoptions(formatter={"float": lambda x: "{0:0.2f}".format(x)})
 
 
@@ -55,7 +56,8 @@ def get_next_task_label(task_label):
             user_input = input("Enter the task name: ")
         task_label = user_input
     else:
-        user_input = input("Enter the task name (or leave blank to repeat the previous task): ")
+        user_input = input(
+            "Enter the task name (or leave blank to repeat the previous task): ")
         if user_input == "":
             pass  # Do nothing -> Let task_label be the same
         else:
@@ -94,7 +96,8 @@ def save_rollout_data(rollout_orig_images, rollout_images, rollout_states, rollo
     states_array = np.array(rollout_states)
     actions_array = np.array(rollout_actions)
     # Save to a single .npz file
-    np.savez(path, orig_images=orig_images_array, images=images_array, states=states_array, actions=actions_array)
+    np.savez(path, orig_images=orig_images_array, images=images_array,
+             states=states_array, actions=actions_array)
     print(f"Saved rollout data at path {path}")
 
 
@@ -107,8 +110,10 @@ def resize_image(img, resize_size):
     """
     assert isinstance(resize_size, tuple)
     # Resize to image size expected by model
-    img = tf.image.encode_jpeg(img)  # Encode as JPEG, as done in RLDS dataset builder
-    img = tf.io.decode_image(img, expand_animations=False, dtype=tf.uint8)  # Immediately decode back
+    # Encode as JPEG, as done in RLDS dataset builder
+    img = tf.image.encode_jpeg(img)
+    # Immediately decode back
+    img = tf.io.decode_image(img, expand_animations=False, dtype=tf.uint8)
     img = tf.image.resize(img, resize_size, method="lanczos3", antialias=True)
     img = tf.cast(tf.clip_by_value(tf.round(img), 0, 255), tf.uint8)
     img = img.numpy()

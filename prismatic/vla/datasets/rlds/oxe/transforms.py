@@ -135,10 +135,13 @@ def kuka_dataset_transform(trajectory: Dict[str, Any]) -> Dict[str, Any]:
         compression_type="ZLIB",
     )
     eef_value = tf.io.decode_raw(eef_value, tf.float32)
-    trajectory["observation"]["clip_function_input/base_pose_tool_reached"] = tf.reshape(eef_value, (-1, 7))
-    gripper_value = tf.io.decode_compressed(trajectory["observation"]["gripper_closed"], compression_type="ZLIB")
+    trajectory["observation"]["clip_function_input/base_pose_tool_reached"] = tf.reshape(
+        eef_value, (-1, 7))
+    gripper_value = tf.io.decode_compressed(
+        trajectory["observation"]["gripper_closed"], compression_type="ZLIB")
     gripper_value = tf.io.decode_raw(gripper_value, tf.float32)
-    trajectory["observation"]["gripper_closed"] = tf.reshape(gripper_value, (-1, 1))
+    trajectory["observation"]["gripper_closed"] = tf.reshape(
+        gripper_value, (-1, 1))
     # trajectory["language_instruction"] = tf.fill(
     #     tf.shape(trajectory["observation"]["natural_language_instruction"]), ""
     # )  # delete uninformative language instruction
@@ -202,7 +205,8 @@ def berkeley_cable_routing_dataset_transform(trajectory: Dict[str, Any]) -> Dict
 
 def roboturk_dataset_transform(trajectory: Dict[str, Any]) -> Dict[str, Any]:
     # invert absolute gripper action, +1 = open, 0 = close
-    gripper_action = invert_gripper_actions(tf.clip_by_value(trajectory["action"]["gripper_closedness_action"], 0, 1))
+    gripper_action = invert_gripper_actions(tf.clip_by_value(
+        trajectory["action"]["gripper_closedness_action"], 0, 1))
 
     trajectory["action"] = tf.concat(
         (
@@ -262,7 +266,8 @@ def viola_dataset_transform(trajectory: Dict[str, Any]) -> Dict[str, Any]:
 
 def berkeley_autolab_ur5_dataset_transform(trajectory: Dict[str, Any]) -> Dict[str, Any]:
     trajectory["observation"]["state"] = trajectory["observation"]["robot_state"][:, 6:14]
-    trajectory["observation"]["depth"] = trajectory["observation"].pop("image_with_depth")
+    trajectory["observation"]["depth"] = trajectory["observation"].pop(
+        "image_with_depth")
 
     # make gripper action absolute action, +1 = open, 0 = close
     gripper_action = trajectory["action"]["gripper_closedness_action"]
@@ -310,9 +315,11 @@ def language_table_dataset_transform(trajectory: Dict[str, Any]) -> Dict[str, An
 
     # decode language instruction
     instruction_bytes = trajectory["observation"]["instruction"]
-    instruction_encoded = tf.strings.unicode_encode(instruction_bytes, output_encoding="UTF-8")
+    instruction_encoded = tf.strings.unicode_encode(
+        instruction_bytes, output_encoding="UTF-8")
     # Remove trailing padding --> convert RaggedTensor to regular Tensor.
-    trajectory["language_instruction"] = tf.strings.split(instruction_encoded, "\x00")[:, :1].to_tensor()[:, 0]
+    trajectory["language_instruction"] = tf.strings.split(
+        instruction_encoded, "\x00")[:, :1].to_tensor()[:, 0]
     return trajectory
 
 
@@ -378,7 +385,8 @@ def austin_buds_dataset_transform(trajectory: Dict[str, Any]) -> Dict[str, Any]:
     trajectory["action"] = tf.concat(
         (
             trajectory["action"][:, :6],
-            invert_gripper_actions(tf.clip_by_value(trajectory["action"][:, -1:], 0, 1)),
+            invert_gripper_actions(tf.clip_by_value(
+                trajectory["action"][:, -1:], 0, 1)),
         ),
         axis=-1,
     )
@@ -391,7 +399,8 @@ def austin_buds_dataset_transform(trajectory: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def nyu_franka_play_dataset_transform(trajectory: Dict[str, Any]) -> Dict[str, Any]:
-    trajectory["observation"]["depth"] = tf.cast(trajectory["observation"]["depth"][..., 0], tf.float32)
+    trajectory["observation"]["depth"] = tf.cast(
+        trajectory["observation"]["depth"][..., 0], tf.float32)
     trajectory["observation"]["depth_additional_view"] = tf.cast(
         trajectory["observation"]["depth_additional_view"][..., 0], tf.float32
     )
@@ -433,7 +442,8 @@ def furniture_bench_dataset_transform(trajectory: Dict[str, Any]) -> Dict[str, A
         (
             trajectory["action"][:, :3],
             tft.euler.from_quaternion(trajectory["action"][:, 3:7]),
-            invert_gripper_actions(tf.clip_by_value(trajectory["action"][:, -1:], 0, 1)),
+            invert_gripper_actions(tf.clip_by_value(
+                trajectory["action"][:, -1:], 0, 1)),
         ),
         axis=-1,
     )
@@ -470,7 +480,8 @@ def austin_sailor_dataset_transform(trajectory: Dict[str, Any]) -> Dict[str, Any
     trajectory["action"] = tf.concat(
         (
             trajectory["action"][:, :6],
-            invert_gripper_actions(tf.clip_by_value(trajectory["action"][:, -1:], 0, 1)),
+            invert_gripper_actions(tf.clip_by_value(
+                trajectory["action"][:, -1:], 0, 1)),
         ),
         axis=-1,
     )
@@ -486,7 +497,8 @@ def austin_sirius_dataset_transform(trajectory: Dict[str, Any]) -> Dict[str, Any
     trajectory["action"] = tf.concat(
         (
             trajectory["action"][:, :6],
-            invert_gripper_actions(tf.clip_by_value(trajectory["action"][:, -1:], 0, 1)),
+            invert_gripper_actions(tf.clip_by_value(
+                trajectory["action"][:, -1:], 0, 1)),
         ),
         axis=-1,
     )
@@ -502,7 +514,8 @@ def bc_z_dataset_transform(trajectory: Dict[str, Any]) -> Dict[str, Any]:
         (
             trajectory["action"]["future/xyz_residual"][:, :3],
             trajectory["action"]["future/axis_angle_residual"][:, :3],
-            invert_gripper_actions(tf.cast(trajectory["action"]["future/target_close"][:, :1], tf.float32)),
+            invert_gripper_actions(
+                tf.cast(trajectory["action"]["future/target_close"][:, :1], tf.float32)),
         ),
         axis=-1,
     )
@@ -577,7 +590,8 @@ def stanford_mask_vit_dataset_transform(trajectory: Dict[str, Any]) -> Dict[str,
     trajectory["observation"]["eef_state"] = tf.concat(
         (
             trajectory["observation"]["end_effector_pose"][:, :4],
-            tf.zeros_like(trajectory["observation"]["end_effector_pose"][:, :2]),
+            tf.zeros_like(trajectory["observation"]
+                          ["end_effector_pose"][:, :2]),
         ),
         axis=-1,
     )
@@ -672,7 +686,8 @@ def utaustin_mutex_dataset_transform(trajectory: Dict[str, Any]) -> Dict[str, An
     trajectory["action"] = tf.concat(
         (
             trajectory["action"][:, :6],
-            invert_gripper_actions(tf.clip_by_value(trajectory["action"][:, -1:], 0, 1)),
+            invert_gripper_actions(tf.clip_by_value(
+                trajectory["action"][:, -1:], 0, 1)),
         ),
         axis=-1,
     )
@@ -781,7 +796,8 @@ def roboset_dataset_transform(trajectory: Dict[str, Any]) -> Dict[str, Any]:
 
     # gripper action is in -1...1 --> clip to 0...1, flip
     gripper_action = trajectory["action"][:, -1:]
-    gripper_action = invert_gripper_actions(tf.clip_by_value(gripper_action, 0, 1))
+    gripper_action = invert_gripper_actions(
+        tf.clip_by_value(gripper_action, 0, 1))
 
     trajectory["action"] = tf.concat(
         (
@@ -827,7 +843,8 @@ def tdroid_dataset_transform(trajectory: Dict[str, Any]) -> Dict[str, Any]:
 def libero_dataset_transform(trajectory: Dict[str, Any]) -> Dict[str, Any]:
     # gripper action is in -1 (open)...1 (close) --> clip to 0...1, flip --> +1 = open, 0 = close
     gripper_action = trajectory["action"][:, -1:]
-    gripper_action = invert_gripper_actions(tf.clip_by_value(gripper_action, 0, 1))
+    gripper_action = invert_gripper_actions(
+        tf.clip_by_value(gripper_action, 0, 1))
 
     trajectory["action"] = tf.concat(
         [
@@ -837,7 +854,99 @@ def libero_dataset_transform(trajectory: Dict[str, Any]) -> Dict[str, Any]:
         axis=1,
     )
     trajectory["observation"]["EEF_state"] = trajectory["observation"]["state"][:, :6]
-    trajectory["observation"]["gripper_state"] = trajectory["observation"]["state"][:, -2:]  # 2D gripper state
+    # 2D gripper state
+    trajectory["observation"]["gripper_state"] = trajectory["observation"]["state"][:, -2:]
+    return trajectory
+
+
+# def transform_dsynth_atomic_tasks(trajectory: Dict[str, Any]) -> Dict[str, Any]:
+#     # Декодируем и ресайзим картинку
+#     image = trajectory["observation"]["right_base_camera_link"]
+#     # image = tf.cast(tf.clip_by_value(tf.round(image), 0, 255), tf.uint8)
+
+#     # Достаем инструкцию
+#     language_instruction = trajectory.get(
+#         "language_instruction", tf.constant("", dtype=tf.string))
+
+#     # Достаем действия
+#     action = trajectory["action"]  # 7D вектор
+
+#     # Если нужно расширить до 13D (пример):
+#     # action_13d = np.concatenate([action[:7], np.zeros(6)])  # Заполнить нули
+
+#     return {
+#         "observation": {...},
+#         "action": action,  # Вернуть в правильном формате
+#         "language_instruction": language_instruction,
+#     }
+
+
+# def transform_dsynth_atomic_tasks(trajectory):
+#     # trajectory["action"] likely shape [T, 13]
+#     act13 = trajectory["action"]
+
+#     # TEMP: take first 6 as eef delta, last as gripper (пример!)
+#     act7 = tf.concat([act13[:, :6], act13[:, -1:]], axis=-1)
+
+#     trajectory["action"] = act7
+#     trajectory["language_instruction"] = trajectory.get(
+#         "language_instruction", tf.fill([tf.shape(act7)[0]], ""))
+#     trajectory["observation"]["image"] = trajectory["observation"]["right_base_camera_link"]
+#     return trajectory
+
+
+def transform_dsynth_atomic_tasks(trajectory: Dict[str, Any]) -> Dict[str, Any]:
+
+    def ensure_time_dim(x):
+        if tf.rank(x) == 3:
+            x = tf.expand_dims(x, 0)
+        return x
+
+    # ===== Observation =====
+    if "observation" in trajectory:
+        obs = trajectory["observation"]
+
+        if "right_base_camera_link" in obs:
+            img = ensure_time_dim(obs["right_base_camera_link"])
+            obs["image"] = tf.cast(img, tf.float32)
+
+        if "fetch_hand" in obs:
+            wrist = ensure_time_dim(obs["fetch_hand"])
+            obs["wrist_image"] = tf.cast(wrist, tf.float32)
+
+        if "state" in obs and "qpos" in obs["state"]:
+            qpos = tf.cast(obs["state"]["qpos"], tf.float32)
+            obs["EEF_state"] = qpos[:, :6]
+            obs["gripper_state"] = tf.clip_by_value(qpos[:, 6:7], 0.0, 1.0)
+
+    # ===== Action =====
+    act = tf.cast(trajectory["action"], tf.float32)
+    act = tf.ensure_shape(act, [None, 13])
+    trajectory["action"] = act
+
+    T = tf.shape(act)[0]
+
+    # ===== Language =====
+    if "task" not in trajectory:
+        trajectory["task"] = {}
+
+    if "language_instructions" not in trajectory["task"]:
+        trajectory["task"]["language_instruction"] = tf.fill([1], "")
+
+    # ===== Optional RLDS fields =====
+    if "reward" not in trajectory:
+        trajectory["reward"] = tf.zeros([T], tf.float32)
+
+    if "discount" not in trajectory:
+        trajectory["discount"] = tf.ones([T], tf.float32)
+
+    for k, v in trajectory.items():
+        print("TOP LEVEL:", k, type(v))
+
+    if "observation" in trajectory:
+        for k, v in trajectory["observation"].items():
+            print("OBS:", k, v.dtype if hasattr(v, "dtype") else type(v))
+
     return trajectory
 
 
@@ -846,6 +955,7 @@ OXE_STANDARDIZATION_TRANSFORMS = {
     "bridge_oxe": bridge_oxe_dataset_transform,
     "bridge_orig": bridge_orig_dataset_transform,
     "bridge_dataset": bridge_orig_dataset_transform,
+    "dsynth_atomic_tasks": transform_dsynth_atomic_tasks,
     "ppgm": ppgm_dataset_transform,
     "ppgm_static": ppgm_dataset_transform,
     "ppgm_wrist": ppgm_dataset_transform,
@@ -905,16 +1015,16 @@ OXE_STANDARDIZATION_TRANSFORMS = {
     "dobbe": dobbe_dataset_transform,
     "roboset": roboset_dataset_transform,
     "rh20t": rh20t_dataset_transform,
-    ### T-DROID datasets
+    # T-DROID datasets
     "tdroid_carrot_in_bowl": tdroid_dataset_transform,
     "tdroid_pour_corn_in_pot": tdroid_dataset_transform,
     "tdroid_flip_pot_upright": tdroid_dataset_transform,
     "tdroid_move_object_onto_plate": tdroid_dataset_transform,
     "tdroid_knock_object_over": tdroid_dataset_transform,
     "tdroid_cover_object_with_towel": tdroid_dataset_transform,
-    ### DROID Finetuning datasets
+    # DROID Finetuning datasets
     "droid_wipe": droid_finetuning_transform,
-    ### LIBERO datasets (modified versions)
+    # LIBERO datasets (modified versions)
     "libero_spatial_no_noops": libero_dataset_transform,
     "libero_object_no_noops": libero_dataset_transform,
     "libero_goal_no_noops": libero_dataset_transform,
