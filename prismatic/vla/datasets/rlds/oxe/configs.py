@@ -700,9 +700,8 @@ OXE_DATASET_CONFIGS = {
         "state_encoding": StateEncoding.POS_EULER,
         "action_encoding": ActionEncoding.EEF_POS,
         "aux_kwargs": {
-            # Для 13-мерных действий нужна маска из 13 элементов
-            # Все 13 измерений используются
-            "absolute_action_mask": [True] * 13
+            "absolute_action_mask": [True] * 13,
+            "action_normalization_mask": [True] * 13,
         }
     }
 

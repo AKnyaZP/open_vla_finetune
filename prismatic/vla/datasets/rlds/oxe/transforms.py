@@ -895,24 +895,20 @@ def libero_dataset_transform(trajectory: Dict[str, Any]) -> Dict[str, Any]:
 #     return trajectory
 
 
+
 def transform_dsynth_atomic_tasks(trajectory: Dict[str, Any]) -> Dict[str, Any]:
 
-    def ensure_time_dim(x):
-        if tf.rank(x) == 3:
-            x = tf.expand_dims(x, 0)
-        return x
-
     # ===== Observation =====
+    # Don't decode images here — the framework's decode_and_resize in obs_transforms.py
+    # handles decoding from string to uint8 and resizing. Just rename fields.
     if "observation" in trajectory:
         obs = trajectory["observation"]
 
         if "right_base_camera_link" in obs:
-            img = ensure_time_dim(obs["right_base_camera_link"])
-            obs["image"] = tf.cast(img, tf.float32)
+            obs["image"] = obs["right_base_camera_link"]
 
         if "fetch_hand" in obs:
-            wrist = ensure_time_dim(obs["fetch_hand"])
-            obs["wrist_image"] = tf.cast(wrist, tf.float32)
+            obs["wrist_image"] = obs["fetch_hand"]
 
         if "state" in obs and "qpos" in obs["state"]:
             qpos = tf.cast(obs["state"]["qpos"], tf.float32)
@@ -948,7 +944,6 @@ def transform_dsynth_atomic_tasks(trajectory: Dict[str, Any]) -> Dict[str, Any]:
             print("OBS:", k, v.dtype if hasattr(v, "dtype") else type(v))
 
     return trajectory
-
 
 # === Registry ===
 OXE_STANDARDIZATION_TRANSFORMS = {
