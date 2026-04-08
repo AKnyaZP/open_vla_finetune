@@ -700,8 +700,19 @@ OXE_DATASET_CONFIGS = {
         "state_encoding": StateEncoding.POS_EULER,
         "action_encoding": ActionEncoding.EEF_POS,
         "aux_kwargs": {
-            "absolute_action_mask": [True] * 13,
-            "action_normalization_mask": [True] * 13,
+            # 0–6: joint positions (absolute, normalize)
+            # 7:   gripper {-1,+1} (absolute, NO normalize — keep clean binary)
+            # 8–9: unused zeros (neutral, do not normalize)
+            # 10:  body lift (absolute, normalize)
+            # 11–12: base linear & angular velocities (relative deltas, normalize)
+            "absolute_action_mask": [
+                True, True, True, True, True, True, True,
+                True, False, False, True, False, False,
+            ],
+            "action_normalization_mask": [
+                True, True, True, True, True, True, True,
+                False, False, False, True, True, True,
+            ],
         }
     }
 

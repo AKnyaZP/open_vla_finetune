@@ -923,11 +923,14 @@ def transform_dsynth_atomic_tasks(trajectory: Dict[str, Any]) -> Dict[str, Any]:
     T = tf.shape(act)[0]
 
     # ===== Language =====
-    if "task" not in trajectory:
-        trajectory["task"] = {}
-
-    if "language_instructions" not in trajectory["task"]:
-        trajectory["task"]["language_instruction"] = tf.fill([1], "")
+    # The framework's `restructure()` expects `language_instruction` at the TOP level of the
+    # trajectory (it will then move it under `task` itself). See dataset.py:175-180.
+    if "language_instruction" not in trajectory:
+        if "task" in trajectory and isinstance(trajectory["task"], dict) \
+                and "language_instruction" in trajectory["task"]:
+            trajectory["language_instruction"] = trajectory["task"]["language_instruction"]
+        else:
+            trajectory["language_instruction"] = tf.fill([T], "")
 
     # ===== Optional RLDS fields =====
     if "reward" not in trajectory:
@@ -935,13 +938,6 @@ def transform_dsynth_atomic_tasks(trajectory: Dict[str, Any]) -> Dict[str, Any]:
 
     if "discount" not in trajectory:
         trajectory["discount"] = tf.ones([T], tf.float32)
-
-    for k, v in trajectory.items():
-        print("TOP LEVEL:", k, type(v))
-
-    if "observation" in trajectory:
-        for k, v in trajectory["observation"].items():
-            print("OBS:", k, v.dtype if hasattr(v, "dtype") else type(v))
 
     return trajectory
 

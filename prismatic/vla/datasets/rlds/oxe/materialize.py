@@ -32,13 +32,12 @@ def make_oxe_dataset_kwargs(
     if dataset_kwargs["action_encoding"] not in [ActionEncoding.EEF_POS, ActionEncoding.EEF_R6]:
         raise ValueError(f"Cannot load `{dataset_name}`; only EEF_POS & EEF_R6 actions supported!")
 
-    # [Contract] For EEF_POS & EEF_R6 actions, only the last action dimension (gripper) is absolute!
-    # Normalize all action dimensions *except* the gripper
-    if dataset_kwargs["action_encoding"] is ActionEncoding.EEF_POS:
+    # Defaults only — per-dataset masks should be provided via `aux_kwargs` in OXE_DATASET_CONFIGS
+    # and will overwrite these via the `dataset_kwargs.update(aux_kwargs)` step below.
+    aux = dataset_kwargs.get("aux_kwargs", {})
+    if "absolute_action_mask" not in aux:
         dataset_kwargs["absolute_action_mask"] = [True] * 13
-        dataset_kwargs["action_normalization_mask"] = [True] * 13
-    elif dataset_kwargs["action_encoding"] is ActionEncoding.EEF_R6:
-        dataset_kwargs["absolute_action_mask"] = [True] * 13
+    if "action_normalization_mask" not in aux:
         dataset_kwargs["action_normalization_mask"] = [True] * 13
     dataset_kwargs["action_proprio_normalization_type"] = action_proprio_normalization_type
 
