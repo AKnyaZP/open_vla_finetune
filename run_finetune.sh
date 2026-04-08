@@ -12,8 +12,8 @@ $PYTHON -m pip install -e .
 $PYTHON -m torch.distributed.run --standalone --nnodes 1 --nproc-per-node 1 vla-scripts/finetune.py \
   --vla_path "openvla/openvla-7b" \
   --data_root_dir /mnt/virtual_ai0001053-01202_SR006-nfs2/tensorflow_datasets/ \
-  --dataset_name dsynth_atomic_tasks \
-  --run_root_dir ./runs \
+  --dataset_name dsynth_atomic_tasks:0.0.2 \
+  --run_root_dir ./runs_first \
   --adapter_tmp_dir ./adapters \
   --lora_rank 32 \
   --batch_size 16 \

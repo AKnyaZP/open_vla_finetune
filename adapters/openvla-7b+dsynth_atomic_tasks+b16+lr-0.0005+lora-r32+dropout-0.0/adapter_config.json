@@ -2,7 +2,7 @@
   "alpha_pattern": {},
   "auto_mapping": {
     "base_model_class": "OpenVLAForActionPrediction",
-    "parent_library": "transformers_modules.openvla.openvla-7b.31f090d05236101ebfc381b61c674dd4746d4ce0.modeling_prismatic"
+    "parent_library": "transformers_modules.openvla.openvla-7b.47a0ec7fc4ec123775a391911046cf33cf9ed83f.modeling_prismatic"
   },
   "base_model_name_or_path": "openvla/openvla-7b",
   "bias": "none",
@@ -24,20 +24,20 @@
   "revision": null,
   "target_modules": [
     "o_proj",
-    "proj",
-    "k_proj",
-    "fc3",
-    "fc2",
-    "fc1",
-    "down_proj",
-    "lm_head",
     "q",
-    "gate_proj",
-    "qkv",
+    "fc2",
     "v_proj",
+    "gate_proj",
+    "down_proj",
+    "proj",
+    "lm_head",
+    "fc3",
     "q_proj",
-    "kv",
-    "up_proj"
+    "fc1",
+    "qkv",
+    "k_proj",
+    "up_proj",
+    "kv"
   ],
   "task_type": null,
   "use_dora": false,

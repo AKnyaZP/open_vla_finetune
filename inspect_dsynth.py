@@ -1,7 +1,7 @@
 import tensorflow_datasets as tfds
 import numpy as np
 
-builder_full = tfds.builder("dsynth_atomic_tasks:1.3.0",
+builder_full = tfds.builder("dsynth_atomic_tasks:0.0.2",
                             data_dir="/home/jovyan/shares/SR006.nfs2/tensorflow_datasets")
 ds_full = builder_full.as_dataset(split='all')
 ds_full_iterator = iter(ds_full)
